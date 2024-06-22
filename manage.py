@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
 import os
+import subprocess
 import sys
 
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'iaas_project.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fireproxy.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -15,7 +16,12 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+    # subprocess.check_output(["sudo", "rm", "-f", "/tmp/firecracker.socket"])
+    # processus = subprocess.Popen(
+    #     ["sudo", "./firecracker", "--api-sock", "/tmp/firecracker.socket"],
+    # )
     execute_from_command_line(sys.argv)
+    # processus.kill()
 
 
 if __name__ == '__main__':
