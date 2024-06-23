@@ -15,7 +15,6 @@ class MicroVMSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class TokenPairSerializer(TokenObtainPairSerializer):
 
 	def validate(self, attrs):

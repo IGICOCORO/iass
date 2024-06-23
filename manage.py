@@ -16,13 +16,7 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-    # subprocess.check_output(["sudo", "rm", "-f", "/tmp/firecracker.socket"])
-    # processus = subprocess.Popen(
-    #     ["sudo", "./firecracker", "--api-sock", "/tmp/firecracker.socket"],
-    # )
     execute_from_command_line(sys.argv)
-    # processus.kill()
-
 
 if __name__ == '__main__':
     main()
