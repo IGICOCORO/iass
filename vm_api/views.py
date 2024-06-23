@@ -1,3 +1,4 @@
+import json
 from rest_framework import viewsets
 from .models import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -7,7 +8,13 @@ from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+import requests as axios
 
+def hexa(x):
+     value = hex(x)[2:].upper()
+     if len(value) == 1:
+          return f"0{value}"
+     return value
 
 class ServeurViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication, SessionAuthentication]
@@ -25,32 +32,43 @@ class MicroVMViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         serializer = MicroVMSerializer(data=request.data)
-        serializer.validated_data(raise_exception=True)
+        serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        serveur:Serveur = data["serveur"]
+
         mvms = MicroVM.objects.all()
-        if mvms.exists():
+        if not mvms.exists():
              magic_numbers = [0, 1]
         else:
              last = MicroVM.objects.last()
-             ip = last.ip_address.split(".")
-             magic_numbers = [int(ip[-1]), int(ip[-2])+4]
+             ip = last.ip.split(".")
+             magic_numbers = [int(ip[-2]), int(ip[-1])+3]
 
         if magic_numbers[1] > 252:
-             magic_numbers[1] = 1
              magic_numbers[0] += 1
+             magic_numbers[1] = magic_numbers[1] % 255
              
-        tap_numbers = [172, 16, magic_numbers[0], magic_numbers[1]]
-        eth_numbers = [172, 16, magic_numbers[0], magic_numbers[1] + 1]
+        tap_numbers = [172, 10, magic_numbers[0], magic_numbers[1]]
+        eth_numbers = [172, 10, magic_numbers[0], magic_numbers[1] + 1]
         mac_numbers = [6, 0, 172, 10, magic_numbers[0], magic_numbers[1] + 1]
 
         dictionaire = {
-            "name": data["name"],
-            "eth_ip": ".".join(eth_numbers),
-            "tap_ip": ".".join(tap_numbers),
-            "fc_mac": ".".join([hex(x)[2:].upper() for x in mac_numbers])
+            "id": 255 * magic_numbers[0] + magic_numbers[1],
+            "name": data["nom"],
+            "eth_ip": ".".join([str(x) for x in eth_numbers]),
+            "tap_ip": ".".join([str(x) for x in tap_numbers]),
+            "fc_mac": ":".join([hexa(x) for x in mac_numbers])
         }
-        return Response(dictionaire, 201)
+        response = axios.post(f"http://{serveur.ip}:8000/micro_vms/", dictionaire)
+        serializer.save(ip = dictionaire["eth_ip"])
+        for server in Serveur.objects.all():
+             data = {
+                  "server_ip": serveur.ip,
+                  "micro_vm_ip": dictionaire["eth_ip"],
+             }
+             axios.post(f"http://{server.ip}:8000/ip_tables/", data)
+        return Response(json.loads(response.text), 201)
     
 class TokenPairView(TokenObtainPairView):
 	serializer_class = TokenPairSerializer
