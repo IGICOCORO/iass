@@ -11,7 +11,6 @@ urlpatterns = [
     path('api/', include('vm_api.urls')),
     path('', views.home, name='home'),
     path('<chemin>', views.home, name='home'),
-    path('api-auth/', include('rest_framework.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

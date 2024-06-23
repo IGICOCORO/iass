@@ -1,11 +1,19 @@
 from rest_framework import serializers
-from .models import VirtualMachine
+from .models import *
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-class VirtualMachineSerializer(serializers.ModelSerializer):
+
+class ServeurSerializer(serializers.ModelSerializer):
     class Meta:
-        model = VirtualMachine
+        model = Serveur
         fields = '__all__'
+
+
+class MicroVMSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MicroVM
+        fields = '__all__'
+
 
 
 class TokenPairSerializer(TokenObtainPairSerializer):
