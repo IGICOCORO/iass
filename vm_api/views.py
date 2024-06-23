@@ -4,10 +4,11 @@ from .models import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.decorators import action
+
+from .serializers import *
 import requests as axios
 
 def hexa(x):
@@ -69,6 +70,26 @@ class MicroVMViewSet(viewsets.ModelViewSet):
              }
              axios.post(f"http://{server.ip}:8000/ip_tables/", data)
         return Response(json.loads(response.text), 201)
+    
+    @action(methods=['GET'], detail=True, permission_classes=[IsAuthenticated], url_name=r'resend', url_path=r"resend")
+    def resend(self, request, pk):
+        micro_vm:MicroVM = self.get_object()
+        reponse = []
+        for server in Serveur.objects.all():
+            data = {
+                "server_ip": micro_vm.serveur.ip,
+                "micro_vm_ip": micro_vm.ip,
+            }
+            result = {"server": str(micro_vm.serveur)}
+            try:
+                axios_reponse = axios.post(f"http://{server.ip}:8000/ip_tables/", data, timeout=3)
+                result["response"] = axios_reponse.json()
+            except Exception as e:
+                result["response"] = str(e)
+            reponse.append(result)
+            
+        return Response(reponse, 200)
+        
     
 class TokenPairView(TokenObtainPairView):
 	serializer_class = TokenPairSerializer
