@@ -4,7 +4,7 @@ from .models import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
@@ -22,14 +22,12 @@ class ServeurViewSet(viewsets.ModelViewSet):
     queryset = Serveur.objects.all()
     serializer_class = ServeurSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = SessionAuthentication,
 
 class MicroVMViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication, SessionAuthentication]
     queryset = MicroVM.objects.all()
     serializer_class = MicroVMSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = SessionAuthentication,
+    permission_classes = [AllowAny]
     
     def create(self, request, *args, **kwargs):
         serializer = MicroVMSerializer(data=request.data)
@@ -75,6 +73,29 @@ class MicroVMViewSet(viewsets.ModelViewSet):
     def resend(self, request, pk):
         micro_vm:MicroVM = self.get_object()
         reponse = []
+        for server in Serveur.objects.all():
+            data = {
+                "server_ip": micro_vm.serveur.ip,
+                "micro_vm_ip": micro_vm.ip,
+            }
+            result = {"server": str(micro_vm.serveur)}
+            try:
+                axios_reponse = axios.post(f"http://{server.ip}:8000/ip_tables/", data, timeout=3)
+                result["response"] = axios_reponse.json()
+            except Exception as e:
+                result["response"] = str(e)
+            reponse.append(result)
+            
+        return Response(reponse, 200)
+    
+    @action(methods=['GET'], detail=True, permission_classes=[IsAuthenticated], url_name=r'restart', url_path=r"restart")
+    def restart(self, request, pk):
+        micro_vm:MicroVM = self.get_object()
+        reponse = []
+        try:
+            axios.get(f"http://{micro_vm.serveur.ip}:8000/micro_vms/{micro_vm.id}/restart/")
+        except Exception as e:
+             return Response({"status": str(e)}, 400)
         for server in Serveur.objects.all():
             data = {
                 "server_ip": micro_vm.serveur.ip,
